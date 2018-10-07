@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,8 +29,8 @@ public class DAO {
 	 * @throws DAOException
 	 */
 	public int numberOfCustomers() throws DAOException {
+            
 		int result = 0;
-
 		String sql = "SELECT COUNT(*) AS NUMBER FROM CUSTOMER";
 		// Syntaxe "try with resources" 
 		// cf. https://stackoverflow.com/questions/22671697/try-try-with-resources-and-connection-statement-and-resultset-closing
@@ -80,7 +81,26 @@ public class DAO {
 	 * @throws DAOException
 	 */
 	public int numberOfOrdersForCustomer(int customerId) throws DAOException {
-		throw new UnsupportedOperationException("Pas encore implémenté");
+		
+            int result = 0;
+            String sql = "SELECT COUNT(QUANTITY) AS QUANTITE FROM PURCHASE_ORDER WHERE CUSTOMER_ID = ?";
+            
+            try (   Connection connection = myDataSource.getConnection();
+                    PreparedStatement stmt = connection.prepareStatement(sql);
+                ) {
+                stmt.setInt(1, customerId);
+                try (ResultSet rs = stmt.executeQuery();) {
+                    if (rs.next()) {
+                        result = rs.getInt("QUANTITE");
+                    }
+                } catch (SQLException ex) {
+                    Logger.getLogger(DAO.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(DAO.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            return result;            
 	}
 
 	/**
@@ -90,8 +110,27 @@ public class DAO {
 	 * @return l'enregistrement correspondant dans la table CUSTOMER, ou null si pas trouvé
 	 * @throws DAOException
 	 */
-	CustomerEntity findCustomer(int customerID) throws DAOException {
-		throw new UnsupportedOperationException("Pas encore implémenté");
+	CustomerEntity findCustomer(int customerId) throws DAOException {
+            
+            CustomerEntity entite = null;
+            String sql = "SELECT NAME AS NOM, ADDRESSLINE1 AS AD1 FROM CUSTOMER WHERE CUSTOMER_ID = ?";
+            
+            try (   Connection connection = myDataSource.getConnection();
+                    PreparedStatement stmt = connection.prepareStatement(sql);
+                ) {
+                stmt.setInt(1, customerId);
+                try (ResultSet rs = stmt.executeQuery();) {
+                    if (rs.next()) {
+                        entite = new CustomerEntity(customerId,rs.getString("NOM"),rs.getString("AD1"));
+                    }
+                } catch (SQLException ex) {
+                    Logger.getLogger(DAO.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(DAO.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            return entite;
 	}
 
 	/**
@@ -102,7 +141,26 @@ public class DAO {
 	 * @throws DAOException
 	 */
 	List<CustomerEntity> customersInState(String state) throws DAOException {
-		throw new UnsupportedOperationException("Pas encore implémenté");
+		
+            ArrayList<CustomerEntity> entites = new ArrayList<>();
+            String sql = "SELECT CUSTOMER_ID AS ID, NAME AS NOM, ADDRESSLINE1 AS AD1 FROM CUSTOMER WHERE STATE = ?";
+            
+            try (   Connection connection = myDataSource.getConnection();
+                    PreparedStatement stmt = connection.prepareStatement(sql);
+                ) {
+                stmt.setString(1, state);
+                try (ResultSet rs = stmt.executeQuery();) {
+                    while (rs.next()) {
+                        entites.add(new CustomerEntity(rs.getInt("ID"),rs.getString("NOM"),rs.getString("AD1")));
+                    }
+                } catch (SQLException ex) {
+                    Logger.getLogger(DAO.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } catch (SQLException ex) {
+                Logger.getLogger(DAO.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            return entites;
 	}
 
 }
